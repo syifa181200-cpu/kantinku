@@ -1,4 +1,38 @@
-<?php session_start(); ?>
+<?php
+require_once __DIR__ . '/../../backend/config/Database.php';
+require_once __DIR__ . '/../../backend/models/User.php';
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama = trim($_POST['nama'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $konfirmasiPassword = $_POST['konfirmasi_password'] ?? '';
+
+    if ($nama === '' || $username === '' || $password === '' || $konfirmasiPassword === '') {
+        $error = 'Semua kolom formulir wajib diisi!';
+    } elseif ($password !== $konfirmasiPassword) {
+        $error = 'Konfirmasi kata sandi tidak cocok!';
+    } elseif (strlen($password) < 6) {
+        $error = 'Kata sandi minimal harus terdiri dari 6 karakter!';
+    } else {
+        $database = new Database();
+        $db = $database->getConnection();
+        $userModel = new User($db);
+        if ($userModel->isUsernameExists($username)) {
+        $error = 'Username sudah terdaftar. Silakan pilih username lain.';
+        } else {
+            $hasil = $userModel->register($nama, $username, $password, 'siswa');
+            if ($hasil) {
+            header('Location: login.php?pesan=registrasi_sukses');
+            exit;
+            }
+            $error = 'Terjadi kegagalan server saat menyimpan data pendaftaran.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -31,43 +65,36 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
-                    <div class="mb-3">
-                        <label for="nama_lengkap" class="form-label fw-semibold">Nama Lengkap & Kelas</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-card-heading"></i></span>
-                            <input type="text" class="form-control" id="nama_lengkap" placeholder="Contoh: Fulana bin Fulan (XI RPL 1)" required>
-                        </div>
+                <?php if ($error !== ''): ?>
+                    <div class="alert alert-danger" role="alert">
+                        <?= $error; ?>
                     </div>
+                <?php endif; ?>
 
-                    <div class="mb-3">
-                        <label for="no_hp" class="form-label fw-semibold">Nomor WhatsApp / HP</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-whatsapp"></i></span>
-                            <input type="tel" class="form-control" id="no_hp" placeholder="Contoh: 08123456789" required>
-                        </div>
+              <!-- Form HTML Murni (Pure PHP POST) -->
+            <form action="register.php" method="POST">
+                <div class="mb-3">
+                    <label for="nama" class="form-label fw-semibold">Nama Lengkap</label>
+                    <input type="text" class="form-control" id="nama" name="nama"
+                        value="<?= htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                     </div>
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold">Username</label>
+                    <input type="text" class="form-control" id="username" name="username"
+                        value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
                     </div>
-
-                    <div class="mb-3">
-                        <label for="username" class="form-label fw-semibold">Username</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
-                            <input type="text" class="form-control" id="username" placeholder="Buat username unik" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="password" class="form-label fw-semibold">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
-                            <input type="password" class="form-control" id="password" placeholder="Buat password aman" required>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold rounded-3 mb-3">
-                        <i class="bi bi-check-circle me-2"></i>Daftar Sekarang
-                    </button>
-                </form>
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold">Kata Sandi</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="konfirmasi_password" class="form-label fw-semibold">Ulangi Kata Sandi</label>
+                    <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                 Daftar Sekarang
+                 </button>
+            </form>
 
                 <div class="text-center pt-3 border-top">
                     <p class="small text-muted mb-0">Sudah punya akun? <a href="login.php" class="fw-bold text-decoration-none text-primary">Masuk di sini</a></p>
@@ -85,27 +112,5 @@
 <!-- Bootstrap 5 JS Bundle CDN -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script src="../assets/js/data.js"></script>
-<script src="../assets/js/api.js"></script>
-<script src="../assets/js/app.js"></script>
-
-<script>
-    async function handleRegisterSubmit(e) {
-        e.preventDefault();
-        const nama = document.getElementById('nama_lengkap').value;
-        const noHp = document.getElementById('no_hp').value;
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        const res = await KantinAPI.register(username, password, nama, noHp);
-        if (res.success) {
-            alert('Pendaftaran akun berhasil! Silakan login.');
-            window.location.href = 'login.php';
-        } else {
-            document.getElementById('alertError').classList.remove('d-none');
-            document.getElementById('errorText').innerText = res.message;
-        }
-    }
-</script>
 </body>
 </html>

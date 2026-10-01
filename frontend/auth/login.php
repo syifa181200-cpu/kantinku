@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/config/Database.php';
 require_once __DIR__ . '/../../backend/models/User.php';
 $error = '';
 $pesan = $_GET['pesan'] ?? '';

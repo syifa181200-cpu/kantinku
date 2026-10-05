@@ -1,38 +1,9 @@
 <?php
-require_once __DIR__ . '/../../backend/config/Database.php';
-require_once __DIR__ . '/../../backend/models/User.php';
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nama = trim($_POST['nama'] ?? '');
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $konfirmasiPassword = $_POST['konfirmasi_password'] ?? '';
-
-    if ($nama === '' || $username === '' || $password === '' || $konfirmasiPassword === '') {
-        $error = 'Semua kolom formulir wajib diisi!';
-    } elseif ($password !== $konfirmasiPassword) {
-        $error = 'Konfirmasi kata sandi tidak cocok!';
-    } elseif (strlen($password) < 6) {
-        $error = 'Kata sandi minimal harus terdiri dari 6 karakter!';
-    } else {
-        $database = new Database();
-        $db = $database->getConnection();
-        $userModel = new User($db);
-        if ($userModel->isUsernameExists($username)) {
-        $error = 'Username sudah terdaftar. Silakan pilih username lain.';
-        } else {
-            $hasil = $userModel->register($nama, $username, $password, 'siswa');
-            if ($hasil) {
-            header('Location: login.php?pesan=registrasi_sukses');
-            exit;
-            }
-            $error = 'Terjadi kegagalan server saat menyimpan data pendaftaran.';
-        }
-    }
-}
+session_start();
+$error = $_SESSION['error_register'] ?? '';
+unset($_SESSION['error_register']);
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -65,36 +36,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <?php if ($error !== ''): ?>
-                    <div class="alert alert-danger" role="alert">
-                        <?= $error; ?>
-                    </div>
-                <?php endif; ?>
 
-              <!-- Form HTML Murni (Pure PHP POST) -->
-            <form action="register.php" method="POST">
-                <div class="mb-3">
-                    <label for="nama" class="form-label fw-semibold">Nama Lengkap</label>
-                    <input type="text" class="form-control" id="nama" name="nama"
-                        value="<?= htmlspecialchars($_POST['nama'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                     </div>
-                <div class="mb-3">
-                    <label for="username" class="form-label fw-semibold">Username</label>
-                    <input type="text" class="form-control" id="username" name="username"
-                        value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                    </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label fw-semibold">Kata Sandi</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                </div>
-                <div class="mb-3">
-                    <label for="konfirmasi_password" class="form-label fw-semibold">Ulangi Kata Sandi</label>
-                    <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" required>
-                </div>
-                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
-                 Daftar Sekarang
-                 </button>
-            </form>
+              <?php if ($error !== ''): ?>
+ <div class="alert alert-danger">
+ <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
+ </div>
+<?php endif; ?>
+<form action="../../backend/auth/register.php" method="POST">
+ <div class="mb-3">
+ <label for="nama">Nama lengkap</label>
+ <input class="form-control" id="nama" name="nama"
+ maxlength="100" required>
+ </div>
+ <div class="mb-3">
+ <label for="username">Username</label>
+ <input class="form-control" id="username" name="username"
+ maxlength="50" required>
+ </div>
+ <div class="mb-3">
+ <label for="password">Password</label>
+ <input type="password" class="form-control"
+ id="password" name="password" required>
+ </div>
+ <div class="mb-3">
+ <label for="konfirmasi_password">Ulangi password</label>
+ <input type="password" class="form-control"
+ id="konfirmasi_password" name="konfirmasi_password"
+ required>
+ </div>
+ <button type="submit" class="btn btn-success w-100">
+ Daftar sekarang
+ </button>
+</form>
 
                 <div class="text-center pt-3 border-top">
                     <p class="small text-muted mb-0">Sudah punya akun? <a href="login.php" class="fw-bold text-decoration-none text-primary">Masuk di sini</a></p>

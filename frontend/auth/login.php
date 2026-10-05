@@ -1,32 +1,14 @@
 <?php
 session_start();
-require_once __DIR__ . '/../../backend/config/Database.php';
-require_once __DIR__ . '/../../backend/models/User.php';
-$error = '';
-$pesan = $_GET['pesan'] ?? '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    if ($username === '' || $password === '') {
-        $error = 'Username dan kata sandi wajib diisi!';
-    } else {
-        $database = new Database();
-        $db = $database->getConnection();
-        $userModel = new User($db);
-        $user = $userModel->login($username, $password);
-        if ($user === false) {
-            $error = 'Username atau kata sandi salah.';
-        } else {
-            session_regenerate_id(true);
-            $_SESSION['user'] = $user;
-            if ($user['role'] === 'siswa') {
-                header('Location: ../siswa/index.php');
-                exit;
-            }
-        }
-    }
+if (isset($_SESSION['user'])) {
+ header('Location: cek-login.php');
+ exit;
 }
+$error = $_SESSION['error_login'] ?? '';
+$pesan = $_SESSION['pesan'] ?? '';
+unset($_SESSION['error_login'], $_SESSION['pesan']);
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -76,25 +58,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
 
-                    <?php if ($pesan === 'registrasi_sukses'): ?>
-                        <div class="alert alert-success">Registrasi berhasil. Silakan login.</div>
-                    <?php endif; ?>
-                    
-                    <?php if ($error !== ''): ?>
-                        <div class="alert alert-danger"><?= htmlspecialchars($error); ?></div>
-                    <?php endif; ?>
-
-                   <form action="login.php" method="POST">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Masuk Aplikasi</button>
-                    </form>
+                   <?php if ($pesan !== ''): ?>
+ <div class="alert alert-success">
+ <?= htmlspecialchars($pesan, ENT_QUOTES, 'UTF-8'); ?>
+ </div>
+<?php endif; ?>
+<?php if ($error !== ''): ?>
+ <div class="alert alert-danger">
+ <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
+ </div>
+<?php endif; ?>
+<form action="../../backend/auth/login.php" method="POST">
+ <div class="mb-3">
+ <label for="username">Username</label>
+ <input class="form-control" id="username" name="username"
+ required>
+ </div>
+ <div class="mb-3">
+ <label for="password">Password</label>
+ <input type="password" class="form-control"
+ id="password" name="password" required>
+ </div>
+ <button type="submit" class="btn btn-primary w-100">
+ Masuk
+ </button>
+</form>
+<a href="register.php">Belum punya akun? Daftar</a>
 
                     <div class="text-center pt-2">
                         <p class="small text-muted mb-3">Belum punya akun siswa? <a href="register.php" class="fw-bold text-decoration-none text-success">Daftar Akun Baru</a></p>
